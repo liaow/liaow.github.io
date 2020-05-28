@@ -1,5 +1,6 @@
 ---
 title: Spring注解驱动 - 组件装载
+categories: spring
 ---
 
 ## Bean生命周期

@@ -1,5 +1,6 @@
 ---
 title: Spring注解驱动 - 组件注册
+categories: spring
 ---
 
 # 1. 注解驱动开发
