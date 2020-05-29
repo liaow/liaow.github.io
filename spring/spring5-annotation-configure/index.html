@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"liaow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Bean生命周期 高清图+代码对bean生命周期深度解析  Spring 只帮我们管理单例模式 Bean 的完整生命周期，对于 prototype 的 bean ，Spring 在创建好交给使用者之后则不会再管理后续的生命周期。 Spring 管理的 bean 的作用域默认是单例，在容器启动的时候创建对象。而作用域是多例的时候，是在每次获取的时候创建对象。 bean 的初始化和销毁方法可以：  @">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring注解驱动 - 组件装载">
+<meta property="og:url" content="https://liaow.github.io/spring/spring5-annotation-configure/index.html">
+<meta property="og:site_name" content="Sahara 小分队">
+<meta property="og:description" content="Bean生命周期 高清图+代码对bean生命周期深度解析  Spring 只帮我们管理单例模式 Bean 的完整生命周期，对于 prototype 的 bean ，Spring 在创建好交给使用者之后则不会再管理后续的生命周期。 Spring 管理的 bean 的作用域默认是单例，在容器启动的时候创建对象。而作用域是多例的时候，是在每次获取的时候创建对象。 bean 的初始化和销毁方法可以：  @">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-05-29T01:30:37.605Z">
+<meta property="article:modified_time" content="2020-05-29T01:30:37.605Z">
+<meta property="article:author" content="Sahara 小分队">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://liaow.github.io/spring/spring5-annotation-configure/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Spring注解驱动 - 组件装载 | Sahara 小分队</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Sahara 小分队</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">生命不息，折腾不止</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://liaow.github.io/spring/spring5-annotation-configure/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Sahara 小分队">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Sahara 小分队">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spring注解驱动 - 组件装载
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-29 09:30:37" itemprop="dateCreated datePublished" datetime="2020-05-29T09:30:37+08:00">2020-05-29</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Bean生命周期"><a href="#Bean生命周期" class="headerlink" title="Bean生命周期"></a>Bean生命周期</h2><blockquote>
+<p><a href="https://mp.weixin.qq.com/s/eYqsvEvwBsnmgDlKVGLLLg" target="_blank" rel="noopener">高清图+代码对bean生命周期深度解析</a></p>
+</blockquote>
+<p>Spring 只帮我们管理单例模式 Bean 的完整生命周期，对于 prototype 的 bean ，Spring 在创建好交给使用者之后则不会再管理后续的生命周期。</p>
+<p>Spring 管理的 bean 的作用域默认是单例，在容器启动的时候创建对象。而作用域是多例的时候，是在每次获取的时候创建对象。</p>
+<p>bean 的初始化和销毁方法可以：</p>
+<ol>
+<li><code>@Bean</code>注解的<code>init-methdod</code>和<code>destroy-method</code>属性中指定，但是要求传入的是不带参数的方法名。</li>
+<li>实现<code>InitializingBean</code>和<code>DisposableBean</code>接口</li>
+<li>使用<code>@PostConstruct</code>和<code>@PreDestroy</code>注解</li>
+<li>实现<code>BeanPostProcessor</code>接口（后置处理器）。</li>
+</ol>
+<a id="more"></a>
+
+<h3 id="Bean-注解属性设置"><a href="#Bean-注解属性设置" class="headerlink" title="@Bean 注解属性设置"></a>@Bean 注解属性设置</h3><p>对要注册的 bean，自定义初始化和销毁方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Car</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Car</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"car construct..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"car init..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destory</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"car destory..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将自定义的初始化方法和销毁方法名配置到<code>@Bean</code>注解属性中：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppConfig6</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Bean</span>(initMethod = <span class="string">"init"</span>, destroyMethod = <span class="string">"destory"</span>)</span><br><span class="line">	<span class="function"><span class="keyword">public</span> Car <span class="title">car</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> Car();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>加载配置类，随即关闭容器：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestCode06</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testLifeMethod</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig6<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		System.out.println(<span class="string">"容器创建完成"</span>);</span><br><span class="line">		applicationContext.close();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>car construct…<br>car init…<br>容器创建完成<br>car destory…</p>
+</blockquote>
+<p>当设置 bean 的作用域是多例的时候：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Scope</span>(ConfigurableBeanFactory.SCOPE_PROTOTYPE)</span><br><span class="line"><span class="meta">@Bean</span>(initMethod = <span class="string">"init"</span>, destroyMethod = <span class="string">"destory"</span>)</span><br><span class="line"><span class="function"><span class="keyword">public</span> Car <span class="title">car</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> Car();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试结果：</p>
+<blockquote>
+<p>容器创建完成</p>
+</blockquote>
+<p>在关闭前获取一次 bean 测试 ：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestCode06</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testLifeMethod</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig6<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		System.out.println(<span class="string">"容器创建完成"</span>);</span><br><span class="line">		applicationContext.getBean(Car<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		applicationContext.close();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试结果：</p>
+<blockquote>
+<p>car construct…<br>car init…<br>容器创建完成<br>car destory…</p>
+</blockquote>
+<p>因此可以得出：spring 对于多例作用域的 bean，只有在获取 bean 的时候才执行配置的初始化和销毁的方法。</p>
+<h3 id="实现InitializingBean和DisposableBean接口"><a href="#实现InitializingBean和DisposableBean接口" class="headerlink" title="实现InitializingBean和DisposableBean接口"></a>实现InitializingBean和DisposableBean接口</h3><p>要注册的 bean 实现 <code>InitializingBean</code>接口和<code>DisposableBean</code>接口，自己重写初始化方法和销毁方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Tank</span> <span class="keyword">implements</span> <span class="title">InitializingBean</span>, <span class="title">DisposableBean</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Tank</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"tank construct..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destroy</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"tank --&gt; DisposableBean --&gt; destroy"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">afterPropertiesSet</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"tank --&gt; InitializingBean --&gt; afterPropertiesSet"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将这个 bean 也配置到配置类中：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppConfig6</span> </span>&#123;</span><br><span class="line">	<span class="comment">// @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)</span></span><br><span class="line">	<span class="meta">@Bean</span>(initMethod = <span class="string">"init"</span>, destroyMethod = <span class="string">"destory"</span>)</span><br><span class="line">	<span class="function"><span class="keyword">public</span> Car <span class="title">car</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> Car();</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@Bean</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Tank <span class="title">tank</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> Tank();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestCode06</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testLifeMethod</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig6<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		System.out.println(<span class="string">"容器创建完成"</span>);</span><br><span class="line">		applicationContext.close();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>car construct…<br>car init…<br>tank construct…<br>tank –&gt; InitializingBean –&gt; afterPropertiesSet<br>容器创建完成<br>tank –&gt; DisposableBean –&gt; destroy<br>car destory…</p>
+</blockquote>
+<h3 id="PostConstruct和-PreDestroy注解"><a href="#PostConstruct和-PreDestroy注解" class="headerlink" title="@PostConstruct和@PreDestroy注解"></a>@PostConstruct和@PreDestroy注解</h3><p>spring 支持对JSR250规范的注解：</p>
+<p><code>@PostConstruct</code>：在bean创建完成并且属性赋值完成，来执行初始化方法</p>
+<p><code>@PreDestroy</code>：在容器销毁 bean 之前通知我们进行清理工作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Dog</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">Dog</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"dog construct..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@PostConstruct</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"dog init..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@PreDestroy</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destory</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"dog destory..."</span>);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试输出结果：</p>
+<blockquote>
+<p>dog construct…<br>dog init…<br>容器创建完成<br>dog destory…</p>
+</blockquote>
+<h3 id="实现BeanPostProcessor接口"><a href="#实现BeanPostProcessor接口" class="headerlink" title="实现BeanPostProcessor接口"></a>实现BeanPostProcessor接口</h3><p>BeanPostProcessor是Spring IOC容器给我们提供的一个扩展接口。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BeanPostProcessor</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Nullable</span></span><br><span class="line">    <span class="function"><span class="keyword">default</span> Object <span class="title">postProcessBeforeInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Nullable</span></span><br><span class="line">    <span class="function"><span class="keyword">default</span> Object <span class="title">postProcessAfterInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> bean;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如上接口声明所示，BeanPostProcessor接口有两个回调方法：</p>
+<p>当一个BeanPostProcessor的实现类注册到Spring IOC容器后，对于该Spring IOC容器所创建的每个bean实例在初始化方法（如afterPropertiesSet和任意已声明的init方法）调用前，将会调用BeanPostProcessor中的postProcessBeforeInitialization方法。</p>
+<p>而在bean实例初始化方法调用完成后，则会调用BeanPostProcessor中的postProcessAfterInitialization方法，整个调用顺序可以简单示意如下：</p>
+<ol>
+<li>Spring IOC容器实例化Bean</li>
+<li>调用BeanPostProcessor的postProcessBeforeInitialization方法</li>
+<li>调用bean实例的初始化方法</li>
+<li>调用BeanPostProcessor的postProcessAfterInitialization方法</li>
+</ol>
+<p>可以看到，Spring容器通过BeanPostProcessor给了我们一个机会对Spring管理的bean进行再加工。比如：我们可以修改bean的属性，可以给bean生成一个动态代理实例等等。一些Spring AOP的底层处理也是通过实现BeanPostProcessor来执行代理包装逻辑的。</p>
+<blockquote>
+<p>多例作用域的 bean 不执行该接口的两个方法。</p>
+</blockquote>
+<p>实现<code>BeanPostProcessor</code>接口，并重写两个默认的方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyBeanPostProcessor</span> <span class="keyword">implements</span> <span class="title">BeanPostProcessor</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Object <span class="title">postProcessAfterInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"postProcessBeforeInitialization..."</span> + beanName + <span class="string">" =&gt; "</span> + bean);</span><br><span class="line">		<span class="keyword">return</span> BeanPostProcessor.<span class="keyword">super</span>.postProcessAfterInitialization(bean, beanName);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Object <span class="title">postProcessBeforeInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"postProcessBeforeInitialization..."</span> + beanName + <span class="string">" =&gt; "</span> + bean);</span><br><span class="line">		<span class="keyword">return</span> BeanPostProcessor.<span class="keyword">super</span>.postProcessBeforeInitialization(bean, beanName);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong>：在很多资料中说接口中两个方法不能返回null，如果返回null，那么在后续初始化方法将报空指针异常或者通过getBean()方法获取不到bena实例对象，因为后置处理器从Spring IoC容器中取出bean实例对象没有再次放回IoC容器中。但是本例是使用<code>spring-context 5.1.8.RELEASE</code>版本，即使返回 null 也不会报错，也可以正常获取bean。</p>
+<p>配置一个 bean 到配置类中 ：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ComponentScan</span>(<span class="string">"com.example.code06"</span>)</span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppConfig6</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Bean</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Dog <span class="title">dog</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> Dog();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>测试：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestCode06</span> </span>&#123;	</span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testLifeMethod</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig6<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		System.out.println(<span class="string">"容器创建完成"</span>);</span><br><span class="line">		applicationContext.close();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>dog construct…<br>postProcessBeforeInitialization…dog =&gt; com.example.code06.Dog@a4102b8<br>dog init…<br>postProcessBeforeInitialization…dog =&gt; com.example.code06.Dog@a4102b8<br>容器创建完成<br>dog destory…</p>
+</blockquote>
+<p>从输出结果可以看到：在 bean 构造完成，在执行初始化方法的前后可以自定义一些逻辑，这极大的增强了spring 的扩展性</p>
+<p><code>org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory</code>类中的源码体现了上述接口的执行逻辑：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 给bean进行属性赋值</span></span><br><span class="line">populateBean(beanName, bd, bw);</span><br><span class="line"><span class="comment">// 初始化 bean 操作</span></span><br><span class="line">initializeBean(beanName, existingBean, bd)&#123;</span><br><span class="line">    <span class="comment">// 初始化之前回调</span></span><br><span class="line">    wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);</span><br><span class="line">    <span class="comment">// 调用自定义的初始化方法</span></span><br><span class="line">    invokeInitMethods(beanName, wrappedBean, mbd);</span><br><span class="line">    <span class="comment">// 初始化之后回调</span></span><br><span class="line">    wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="属性赋值"><a href="#属性赋值" class="headerlink" title="属性赋值"></a>属性赋值</h2><p>在Spring框架中，属性的注入我们有多种方式，我们可以通过构造方法注入，可以通过set方法注入，也可以通过p名称空间注入，方式多种多样，对于复杂的数据类型比如对象、数组、List集合、map集合、Properties等，我们也都有相应的注入方式。其中比较常用的是set注入的方式，下面来看看spring的Set注入的方式：</p>
+<h3 id="使用-Value赋值"><a href="#使用-Value赋值" class="headerlink" title="使用@Value赋值"></a>使用@Value赋值</h3><p>使用<code>@Value</code>注解赋值 bean 属性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Person</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 基本数值</span></span><br><span class="line">	<span class="meta">@Value</span>(<span class="string">"example"</span>)</span><br><span class="line">	<span class="keyword">private</span> String name;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 可以写SpEL； #&#123;&#125;</span></span><br><span class="line">	<span class="meta">@Value</span>(<span class="string">"#&#123;20+1&#125;"</span>)</span><br><span class="line">	<span class="keyword">private</span> String age;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编写测试：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestCode07</span> </span>&#123;</span><br><span class="line">	AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig7<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testValue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		Person person = applicationContext.getBean(Person<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		System.out.println(person);</span><br><span class="line">		applicationContext.close();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>Person(name=example, age=21)</p>
+</blockquote>
+<h3 id="从配置文件中读取"><a href="#从配置文件中读取" class="headerlink" title="从配置文件中读取"></a>从配置文件中读取</h3><p>xml 版本：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">context:property-placeholder</span> <span class="attr">location</span>=<span class="string">"classpath:person.properties"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>使用<code>@PropertySource</code>读取外部配置文件中的k/v保存到运行的环境变量中，加载完外部的配置文件以后使用<code>${}</code>取出配置文件的值：</p>
+<p>创建配置文件application.properties，并存一份配置：</p>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">person.nickName</span>=<span class="string">exam</span></span><br></pre></td></tr></table></figure>
+
+<p>配置类中增加<code>@PropertySource</code>注解，引入外部配置文件：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@PropertySource</span>(value = &#123;<span class="string">"classpath:/application.properties"</span>&#125;)</span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppConfig7</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Bean</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> Person <span class="title">person</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> Person();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用<code>@Value</code>注解的<code>${}</code>表达式取出容器中的配置信息：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Person</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 基本数值</span></span><br><span class="line">	<span class="meta">@Value</span>(<span class="string">"example"</span>)</span><br><span class="line">	<span class="keyword">private</span> String name;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 可以写SpEL； #&#123;&#125;</span></span><br><span class="line">	<span class="meta">@Value</span>(<span class="string">"#&#123;20+1&#125;"</span>)</span><br><span class="line">	<span class="keyword">private</span> String age;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 可以写$&#123;&#125; 取出配置文件(properties)中的值（在运行环境变量里面的值）</span></span><br><span class="line">	<span class="meta">@Value</span>(<span class="string">"$&#123;person.nickName&#125;"</span>)</span><br><span class="line">	<span class="keyword">private</span> String nickName;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>另外，在容器对象中也可以直接获取：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestCode07</span> </span>&#123;</span><br><span class="line">	AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig7<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testValue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		Person person = applicationContext.getBean(Person<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		System.out.println(person);</span><br><span class="line"></span><br><span class="line">		String property = applicationContext.getEnvironment().getProperty(<span class="string">"person.nickName"</span>);</span><br><span class="line">		System.out.println(property);</span><br><span class="line">		applicationContext.close();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>Person(name=example, age=21, nickName=exam)<br>exam</p>
+</blockquote>
+<h2 id="自动装配"><a href="#自动装配" class="headerlink" title="自动装配"></a>自动装配</h2><p>Spring利用依赖注入和DI完成对IOC容器中各个组件的依赖关系赋值。自动装配的优点有：自动装配可以大大地减少属性和构造器参数的指派。自动装配也可以在解析对象时更新配置。自动装配的方式有很多，其中包含Spring的注解以及java自带的注解。</p>
+<h3 id="Autowired"><a href="#Autowired" class="headerlink" title="@Autowired"></a>@Autowired</h3><p>在xml 方式的时候：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 该 BeanPostProcessor 将自动对标注 @Autowired 的 Bean 进行注入 --&gt;</span>     </span><br><span class="line"><span class="tag">&lt;<span class="name">bean</span> <span class="attr">class</span>=<span class="string">"org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>Spring 提供了<code>@Autowired</code>注解可以对成员变量、方法和构造函数进行标注，来完成自动装配的工作。无需再通过传统的在 bean 的xml文件中进行bean的注入配置。</p>
+<p>@Autowired是根据类型进行标注的，如需要按照名称进行装配，则需要配合<code>@Qualifier</code>使用：</p>
+<ol>
+<li>默认优先按照 bean 的类型去容器中找对应的组件</li>
+<li>若有多个相同类型的组件，再将属性名称作为组件的 id 去容器中查找</li>
+<li>使用<code>@Qualifier(&quot;bookDao&quot;)</code>来指定需要装配的组件id而不是根据属性名</li>
+<li>使用<code>@Autowired</code>注解的时候，如果容器中没有这个类型的 bean 就会报异常，可以显式指定<code>@Autowired(required=false)</code>避免报错</li>
+<li><code>@Primary</code>让Spring进行自动装配时，在没有明确用<code>@Qualifier</code>指定的情况下默认使用优先首选的 bean</li>
+</ol>
+<p>创建 service 接口，并自定义两个实现类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl1</span> <span class="keyword">implements</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl2</span> <span class="keyword">implements</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>自定义 cotroller 应用 service 接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ToString</span></span><br><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="keyword">private</span> UserService userService;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>配置包扫描：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ComponentScan</span>(basePackages = &#123;<span class="string">"com.example.code08"</span>&#125;)</span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppConfig8</span> </span>&#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编写测试：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestCode08</span> </span>&#123;</span><br><span class="line">	AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig8<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testAutowired</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		System.out.println(applicationContext.getBean(UserController<span class="class">.<span class="keyword">class</span>))</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>运行会报异常：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">警告: Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name <span class="string">'userController'</span>: Unsatisfied dependency expressed through field <span class="string">'userService'</span>; nested exception is org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type <span class="string">'com.example.code08.service.UserService'</span> available: expected single matching bean but found <span class="number">2</span>: userServiceImpl1,userServiceImpl2</span><br></pre></td></tr></table></figure>
+
+<p>表示容器中有多个 service 类型的 bean ，<code>@Autowired</code>注解的属性名是：userService，找不到 id 为这个属性名的 bean，所以抛出异常。</p>
+<p>因此可以修改属性名找到对应的 bean：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ToString</span></span><br><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="keyword">private</span> UserService userServiceImpl1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>UserController(userServiceImpl1=com.example.code08.service.UserServiceImpl1@501edcf1)</p>
+</blockquote>
+<p>这种方式不是很优雅，属性名改了，所有用到这个属性变量名的地方都需要改，因此可以使用<code>@Qualifier</code>注解，显式指定容器中的 bean：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ToString</span></span><br><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Qualifier</span>(<span class="string">"userServiceImpl2"</span>)</span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="keyword">private</span> UserService userService;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>UserController(userService=com.example.code08.service.UserServiceImpl2@78b729e6)</p>
+</blockquote>
+<p>还有一种办法就是，对某个组件使用<code>@Primary</code>注解，这个注解表示，如果存在相同类型的 bean，就以这个为主依赖。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Primary</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserServiceImpl2</span> <span class="keyword">implements</span> <span class="title">UserService</span> </span>&#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@ToString</span></span><br><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserController</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Autowired</span></span><br><span class="line">	<span class="keyword">private</span> UserService userServiceImpl1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>UserController(userServiceImpl1=com.example.code08.service.UserServiceImpl2@3c9d0b9d)</p>
+</blockquote>
+<h3 id="Resource和-Inject"><a href="#Resource和-Inject" class="headerlink" title="@Resource和@Inject"></a>@Resource和@Inject</h3><p>Spring还支持使用<code>@Resource</code>（JSR250）和<code>@Inject</code>（JSR330）</p>
+<p><strong>@Resource</strong></p>
+<p>可以和<code>@Autowired</code>一样实现自动的装配，默认是按照组件的名称来进行装配，不支持<code>@Primary</code> 也没有支持和<code>@Autowired(required = false)</code>一样的功能。</p>
+<p><strong>@Inject</strong></p>
+<p>需要导入javax.inject的包，和<code>@Autowired</code>的功能一样，不支持和<code>@Autowired(required = false)</code>一样的功能。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>javax.inject<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>javax.inject<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Autowired可标注的地方"><a href="#Autowired可标注的地方" class="headerlink" title="@Autowired可标注的地方"></a>@Autowired可标注的地方</h3><p>我们从<code>@Autowired</code>这个注解点进去看一下源码，我们可以发现这个注解可以标注的位置有：构造器，参数，方法，属性；都是从容器中来获取参数组件的值：</p>
+<h4 id="标注在方法的参数上"><a href="#标注在方法的参数上" class="headerlink" title="标注在方法的参数上"></a>标注在方法的参数上</h4><p><code>@Autowired</code>可以标注在方法的参数上，如果容器里只有一种类型的bean，那么在<code>@Bean</code>注解这个方法的时候，可以省略不写：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ComponentScan</span>(basePackages = &#123;<span class="string">"com.example.code08"</span>&#125;)</span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppConfig8</span> </span>&#123;</span><br><span class="line">	</span><br><span class="line">	<span class="meta">@Bean</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> User <span class="title">user</span><span class="params">(UserController userController)</span> </span>&#123;</span><br><span class="line">		System.out.println(userController.getClass());</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> User();</span><br><span class="line">	&#125;</span><br><span class="line">    </span><br><span class="line">  <span class="comment">// 以上等价于以下</span></span><br><span class="line">  <span class="meta">@Bean</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> User <span class="title">user</span><span class="params">(@Autowired UserController userController)</span> </span>&#123;</span><br><span class="line">		System.out.println(userController.getClass());</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">new</span> User();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="标注在方法上"><a href="#标注在方法上" class="headerlink" title="标注在方法上"></a>标注在方法上</h4><p><code>@Autowired</code>可以注解在属性上，也可以注解在 setter 方法上，这种很不常用：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setUserService</span><span class="params">(UserService userService)</span></span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.userService = userService;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="标注在构造函数上"><a href="#标注在构造函数上" class="headerlink" title="标注在构造函数上"></a>标注在构造函数上</h4><p><code>@Autowired</code>可以标注在构造函数上，需要注意的是，这种也需要注意参数名称和容器中同类型bean 的问题，解决办法还是在方法参数前面注解<code>@Qualifier</code>显式指定bean：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">UserController</span><span class="params">(UserService userServiceImpl2)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.userService = userServiceImpl2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>UserController(userService=com.example.code08.service.UserServiceImpl2@6b26e945)</p>
+</blockquote>
+<p>显式指定：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">UserController</span><span class="params">(@Qualifier(<span class="string">"userServiceImpl1"</span>)</span> UserService userService) </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.userService = userService;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>UserController(userService=com.example.code08.service.UserServiceImpl1@54c562f7)</p>
+</blockquote>
+<p>综上，这种配置也是常用。</p>
+<h2 id="使用Spring底层组件"><a href="#使用Spring底层组件" class="headerlink" title="使用Spring底层组件"></a>使用Spring底层组件</h2><p>要想使用Spring底层组件，如<code>ApplicationContext</code>、<code>BeanFactory</code>等。假设有个 Food 组件需要使用<code>ApplicationContext</code>对象，那么可以实现<code>ApplicationContextAware</code>接口，重写<code>setApplicationContext()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Food</span> <span class="keyword">implements</span> <span class="title">ApplicationContextAware</span>, <span class="title">BeanNameAware</span>, <span class="title">EmbeddedValueResolverAware</span> </span>&#123;</span><br><span class="line">	<span class="keyword">private</span> ApplicationContext applicationContext;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setApplicationContext</span><span class="params">(ApplicationContext applicationContext)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.applicationContext = applicationContext;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setEmbeddedValueResolver</span><span class="params">(StringValueResolver resolver)</span> </span>&#123;</span><br><span class="line">		String resolveStringValue = resolver.resolveStringValue(<span class="string">"current os name = $&#123;os.name&#125;"</span>);</span><br><span class="line">		System.out.println(resolveStringValue);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setBeanName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">		System.out.println(<span class="string">"current bean name = "</span> + name);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Spring 提供了很多<code>Aware</code>接口的子类接口，并且提供了回调方法，用于我们自定义组件实现这些接口，重写这些回调方法就能拿到 Spring 底层的对象了。<code>ApplicationContextAware</code>接口获取IOC容器，<code>BeanNameAware</code>接口获取当前 bean 在容器中的 name，<code>EmbeddedValueResolverAware</code>解析 Spring 中支持的表达式。</p>
+<h2 id="xxxAware接口回调原理"><a href="#xxxAware接口回调原理" class="headerlink" title="xxxAware接口回调原理"></a>xxxAware接口回调原理</h2><p>所有xxxAware都会被ApplicationContextAwareProcessor实现类调用。看<code>org.springframework.context.support.ApplicationContextAwareProcessor</code>源码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">postProcessBeforeInitialization</span><span class="params">(<span class="keyword">final</span> Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    AccessControlContext acc = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span> &amp;&amp;</span><br><span class="line">        (bean <span class="keyword">instanceof</span> EnvironmentAware || bean <span class="keyword">instanceof</span> EmbeddedValueResolverAware ||</span><br><span class="line">         bean <span class="keyword">instanceof</span> ResourceLoaderAware || bean <span class="keyword">instanceof</span> ApplicationEventPublisherAware ||</span><br><span class="line">         bean <span class="keyword">instanceof</span> MessageSourceAware || bean <span class="keyword">instanceof</span> ApplicationContextAware)) &#123;</span><br><span class="line">        acc = <span class="keyword">this</span>.applicationContext.getBeanFactory().getAccessControlContext();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (acc != <span class="keyword">null</span>) &#123;</span><br><span class="line">        AccessController.doPrivileged((PrivilegedAction&lt;Object&gt;) () -&gt; &#123;</span><br><span class="line">            invokeAwareInterfaces(bean);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;, acc);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        invokeAwareInterfaces(bean);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> bean;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">invokeAwareInterfaces</span><span class="params">(Object bean)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> Aware) &#123;</span><br><span class="line">        <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> EnvironmentAware) &#123;</span><br><span class="line">            ((EnvironmentAware) bean).setEnvironment(<span class="keyword">this</span>.applicationContext.getEnvironment());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> EmbeddedValueResolverAware) &#123;</span><br><span class="line">            ((EmbeddedValueResolverAware) bean).setEmbeddedValueResolver(<span class="keyword">this</span>.embeddedValueResolver);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> ResourceLoaderAware) &#123;</span><br><span class="line">            ((ResourceLoaderAware) bean).setResourceLoader(<span class="keyword">this</span>.applicationContext);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> ApplicationEventPublisherAware) &#123;</span><br><span class="line">            ((ApplicationEventPublisherAware) bean).setApplicationEventPublisher(<span class="keyword">this</span>.applicationContext);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> MessageSourceAware) &#123;</span><br><span class="line">            ((MessageSourceAware) bean).setMessageSource(<span class="keyword">this</span>.applicationContext);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> ApplicationContextAware) &#123;</span><br><span class="line">            ((ApplicationContextAware) bean).setApplicationContext(<span class="keyword">this</span>.applicationContext);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在<code>invokeAwareInterfaces()</code>方法中，依次找对应的接口，并调用对应的接口方法，完成传参操作。</p>
+<h2 id="Profile根据环境装载"><a href="#Profile根据环境装载" class="headerlink" title="@Profile根据环境装载"></a>@Profile根据环境装载</h2><p>Spring为我们提供的可以根据当前环境，动态的激活和切换一系列组件的功能，实际开发中分为：开发环境、测试环境和生产环境。</p>
+<p><code>@Profile</code>注解可以指定组件在哪个环境下才能被注册到容器中，加了环境标识的bean，只有这个环境被激活的时候才能注册到容器中，默认是default。</p>
+<p>环境激活的两种方法：</p>
+<ul>
+<li>使用命令行动态参数：在JVM参数配置<code>-Dspring.profiles.active=test</code></li>
+<li>代码的方式激活某种环境</li>
+</ul>
+<p>自定义一个数据库源：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyDataSource</span> </span>&#123;</span><br><span class="line">	<span class="keyword">private</span> String jdbcUrl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>配置多个数据源：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AppConfig9</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Profile</span>(<span class="string">"test"</span>)</span><br><span class="line">	<span class="meta">@Bean</span>(<span class="string">"testDataSource"</span>)</span><br><span class="line">	<span class="function"><span class="keyword">public</span> MyDataSource <span class="title">testDataSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		MyDataSource dataSource = <span class="keyword">new</span> MyDataSource();</span><br><span class="line">		dataSource.setJdbcUrl(<span class="string">"jdbc:mysql://localhost:3306/test"</span>);</span><br><span class="line">		<span class="keyword">return</span> dataSource; </span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="meta">@Profile</span>(<span class="string">"prod"</span>)</span><br><span class="line">	<span class="meta">@Bean</span>(<span class="string">"prodDataSource"</span>)</span><br><span class="line">	<span class="function"><span class="keyword">public</span> MyDataSource <span class="title">prodDataSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		MyDataSource dataSource = <span class="keyword">new</span> MyDataSource();</span><br><span class="line">		dataSource.setJdbcUrl(<span class="string">"jdbc:mysql://localhost:3306/prod"</span>);</span><br><span class="line">		<span class="keyword">return</span> dataSource; </span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="meta">@Profile</span>(<span class="string">"dev"</span>)</span><br><span class="line">	<span class="meta">@Bean</span>(<span class="string">"devDataSource"</span>)</span><br><span class="line">	<span class="function"><span class="keyword">public</span> MyDataSource <span class="title">devDataSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		MyDataSource dataSource = <span class="keyword">new</span> MyDataSource();</span><br><span class="line">		dataSource.setJdbcUrl(<span class="string">"jdbc:mysql://localhost:3306/dev"</span>);</span><br><span class="line">		<span class="keyword">return</span> dataSource; </span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="meta">@Bean</span>(<span class="string">"dataSource"</span>)</span><br><span class="line">	<span class="function"><span class="keyword">public</span> MyDataSource <span class="title">dataSource</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		MyDataSource dataSource = <span class="keyword">new</span> MyDataSource();</span><br><span class="line">		dataSource.setJdbcUrl(<span class="string">"jdbc:mysql://localhost:3306/default"</span>);</span><br><span class="line">		<span class="keyword">return</span> dataSource; </span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>编写测试类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestCode09</span> </span>&#123;</span><br><span class="line">	<span class="meta">@Test</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testProfile</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext(AppConfig9<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		MyDataSource dataSource = applicationContext.getBean(MyDataSource<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">		System.out.println(dataSource);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>MyDataSource(jdbcUrl=jdbc:mysql://localhost:3306/default)</p>
+</blockquote>
+<p>可以使用JVM命令行参数指定运行环境，也可以在容器初始化的时候代码指定：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testProfileCode</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//1、创建一个applicationContext</span></span><br><span class="line">    AnnotationConfigApplicationContext applicationContext = <span class="keyword">new</span> AnnotationConfigApplicationContext();</span><br><span class="line">    <span class="comment">//2、设置需要激活的环境</span></span><br><span class="line">    applicationContext.getEnvironment().setActiveProfiles(<span class="string">"dev"</span>);</span><br><span class="line">    <span class="comment">//3、注册主配置类</span></span><br><span class="line">    applicationContext.register(AppConfig9<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">    <span class="comment">//4、启动刷新容器</span></span><br><span class="line">    applicationContext.refresh();</span><br><span class="line"></span><br><span class="line">    String[] beanNames = applicationContext.getBeanNamesForType(MyDataSource<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">    <span class="keyword">for</span> (String beanName : beanNames) &#123;</span><br><span class="line">        System.out.println(beanName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出结果：</p>
+<blockquote>
+<p>devDataSource<br>dataSource</p>
+</blockquote>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li><p>Bean 加载顺序依次为：</p>
+<ol>
+<li>实例化;</li>
+<li>设置属性值;</li>
+<li>如果实现了BeanNameAware接口,调用setBeanName设置Bean的ID或者Name;</li>
+<li>如果实现BeanFactoryAware接口,调用setBeanFactory 设置BeanFactory;</li>
+<li>如果实现ApplicationContextAware,调用setApplicationContext设置ApplicationContext</li>
+<li>调用BeanPostProcessor的预先初始化方法;</li>
+<li>调用InitializingBean的afterPropertiesSet()方法;</li>
+<li>调用定制init-method方法；</li>
+<li>调用BeanPostProcessor的后初始化方法;</li>
+</ol>
+</li>
+<li><p>Bean 对象的初始化和销毁方法：</p>
+<p>1）使用 @Bean 注解的属性配置</p>
+<p>2）实现InitializingBean和DisposableBean接口</p>
+<p>3）使用@PostConstruct和@PreDestroy注解</p>
+<p>4）实现BeanPostProcessor接口，能够在bean的属性装配成功之后，在初始化方法执行的前后增加逻辑</p>
+</li>
+<li><p>属性赋值可以使用 @Value 注解，其属性可以配置 “${}” 占位符，配合 @PropertySource 注解引入外部配置文件，然后就可以动态为属性赋值。</p>
+</li>
+<li><p>组件的自动装配：</p>
+<p>1）使用 @Atuowired 注解进行自动装配，当容器中存在多个相同类型的 bean 的时候，可以使用 @Qualifier 注解进行显式指定。</p>
+<p>2）使用@Resource或@Inject</p>
+</li>
+<li><p>想要使用 spring 底层的组件，如 spring ioc 容器可以实现 ApplicationContextAware 接口。当然也可以直接在让spring 通过构造函数传入。</p>
+</li>
+<li><p>由于在开发中会根据不同的软件环境来装载不同的相同类型的不同组件，如根据软件环境装配数据源，就就可以使用 @Profile 注解。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/spring/spring5-annotation-register/" rel="prev" title="Spring注解驱动 - 组件注册">
+      <i class="fa fa-chevron-left"></i> Spring注解驱动 - 组件注册
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Bean生命周期"><span class="nav-number">1.</span> <span class="nav-text">Bean生命周期</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Bean-注解属性设置"><span class="nav-number">1.1.</span> <span class="nav-text">@Bean 注解属性设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实现InitializingBean和DisposableBean接口"><span class="nav-number">1.2.</span> <span class="nav-text">实现InitializingBean和DisposableBean接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PostConstruct和-PreDestroy注解"><span class="nav-number">1.3.</span> <span class="nav-text">@PostConstruct和@PreDestroy注解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实现BeanPostProcessor接口"><span class="nav-number">1.4.</span> <span class="nav-text">实现BeanPostProcessor接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#属性赋值"><span class="nav-number">2.</span> <span class="nav-text">属性赋值</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用-Value赋值"><span class="nav-number">2.1.</span> <span class="nav-text">使用@Value赋值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从配置文件中读取"><span class="nav-number">2.2.</span> <span class="nav-text">从配置文件中读取</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动装配"><span class="nav-number">3.</span> <span class="nav-text">自动装配</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Autowired"><span class="nav-number">3.1.</span> <span class="nav-text">@Autowired</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Resource和-Inject"><span class="nav-number">3.2.</span> <span class="nav-text">@Resource和@Inject</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Autowired可标注的地方"><span class="nav-number">3.3.</span> <span class="nav-text">@Autowired可标注的地方</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#标注在方法的参数上"><span class="nav-number">3.3.1.</span> <span class="nav-text">标注在方法的参数上</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#标注在方法上"><span class="nav-number">3.3.2.</span> <span class="nav-text">标注在方法上</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#标注在构造函数上"><span class="nav-number">3.3.3.</span> <span class="nav-text">标注在构造函数上</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用Spring底层组件"><span class="nav-number">4.</span> <span class="nav-text">使用Spring底层组件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#xxxAware接口回调原理"><span class="nav-number">5.</span> <span class="nav-text">xxxAware接口回调原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Profile根据环境装载"><span class="nav-number">6.</span> <span class="nav-text">@Profile根据环境装载</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Sahara 小分队</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sahara 小分队</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+
+    <span style="display: inline-block;margin: -7px 5px;">
+      <a target="_blank" href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral">
+        <img src="/images/upyun.png" width="50" height="25">
+      </a>
+    </span>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
