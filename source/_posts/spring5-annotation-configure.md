@@ -1,6 +1,9 @@
 ---
 title: Spring注解驱动 - 组件装载
+date: 2019-12-24 12:11:04
+updated: 2020-02-14 13:11:04
 categories: spring
+comments: false
 ---
 
 ## Bean生命周期

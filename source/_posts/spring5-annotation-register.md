@@ -1,6 +1,9 @@
 ---
 title: Spring注解驱动 - 组件注册
+date: 2019-12-24 22:03:30
+updated: 2020-02-14 13:12:14
 categories: spring
+comments: false
 ---
 
 # 1. 注解驱动开发
